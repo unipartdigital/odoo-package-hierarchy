@@ -3,7 +3,7 @@
 
 {
     'name': 'Package Hierarchy',
-    'version': '1',
+    'version': '11',
     'summary': 'Inventory, Logistics, Warehousing',
     'description': "Add the ability for multi-level packages back to Odoo",
     'depends': ['stock'],
