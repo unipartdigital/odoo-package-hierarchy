@@ -62,7 +62,57 @@ class QuantPackage(models.Model):
         for package in self:
             package.display_name = '%s/%s' % (package.package_id.name, package.name) if package.package_id else package.name
 
+    def is_all_contents_in(self, rs):
+        """See if the entire contents of a package is in recordset rs.
+        rs can be a recordset of quants or packages.
+        """
+        if rs._name == 'stock.quant':
+            compare_rs = self.children_quant_ids
+        elif rs._name == 'stock.quant.package':
+            compare_rs = self.children_ids
+        else:
+            raise ValidationError(_("Expected stock.quant.package, got %s instead."), rs._name)
+        return all([a in rs for a in compare_rs])
+
     def _compute_current_picking_info(self):
-        # don't break _compute_package_info by having multiple records in self.
-        for pack in self:
-            super(QuantPackage, pack)._compute_current_picking_info()
+        """When a whole parent is in a picking, add it."""
+        super(QuantPackage, self)._compute_current_picking_info()
+        Picking = self.env['stock.picking']
+
+        picking = Picking.browse(self.env.context.get('picking_id'))
+
+        if picking:
+            picking_packages = picking.entire_package_detail_ids | picking.entire_package_ids
+
+            # TODO: Not sure what this is doing but it fails without it...
+            picking_packages.mapped('current_picking_move_line_ids')
+
+            for package in self:
+                parent_pack = package.package_id
+                if parent_pack and parent_pack.is_all_contents_in(picking_packages):
+                    # entire parent pack is in picking. Add parent package to pickings packages.
+                    children_packs = parent_pack.children_ids
+
+                    parent_pack.current_picking_move_line_ids = children_packs.mapped('current_picking_move_line_ids')
+                    parent_pack.current_picking_id = True
+                    parent_pack.current_source_location_id = children_packs[:1].current_picking_move_line_ids[:1].location_id
+                    parent_pack.current_destination_location_id = children_packs[:1].current_picking_move_line_ids[:1].location_dest_id
+                    parent_pack.is_processed = all([p.is_processed for p in children_packs])
+
+    def action_toggle_processed(self):
+        picking_id = self.env.context.get('picking_id')
+        if picking_id:
+            self.ensure_one()
+
+            move_lines = self.current_picking_move_line_ids
+
+            if move_lines.filtered(lambda ml: ml.qty_done < ml.product_uom_qty):
+                destination_location = self.env.context.get('destination_location')
+                for ml in move_lines:
+                    vals = {'qty_done': ml.product_uom_qty}
+                    if destination_location:
+                        vals['location_dest_id'] = destination_location
+                    ml.write(vals)
+            else:
+                for ml in move_lines:
+                    ml.qty_done = 0
