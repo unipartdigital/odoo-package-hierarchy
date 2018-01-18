@@ -13,6 +13,7 @@
     ],
     'data': [
         'views/stock_quant_views.xml',
+        'views/stock_move_views.xml',
         'views/stock_picking_views.xml',
     ],
     'qweb': [

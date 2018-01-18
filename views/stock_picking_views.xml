@@ -13,6 +13,11 @@
                 <field name="x_pallet_id" />
                 <button name="palletise" type="object" string="Palletise"/>
             </xpath>
+
+            <xpath expr="//field[@name='result_package_id']" position="after">
+                <field name="u_result_parent_package_id" attrs="{'readonly': [('result_package_id', '=', False)]}"
+                    groups="stock.group_tracking_lot" />
+            </xpath>
         </field>
     </record>
 </odoo>
