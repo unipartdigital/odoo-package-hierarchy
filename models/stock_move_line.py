@@ -28,7 +28,7 @@ class StockMoveLine(models.Model):
                     if result_package.package_id != result_parent:
                         result_package.package_id = result_parent
                 else:
-                    raise ValidatinError(
+                    raise ValidationError(
                             _('Result parent package without result'
                               ' package at picking %s') % ml.picking_id.name)
             else:
