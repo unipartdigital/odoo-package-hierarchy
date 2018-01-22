@@ -35,15 +35,26 @@ class StockMoveLine(models.Model):
                 if result_package and result_package.package_id:
                     result_package.package_id = False
 
+    @api.onchange('result_package_id')
+    def onchange_result_package(self):
+        """ Remove the result parent package when result package is empty.
+            In order this to work parent package field cannot be readonly.
+        """
+        if not self.result_package_id and self.u_result_parent_package_id:
+            self.u_result_parent_package_id = False
+
     @api.constrains('u_result_parent_package_id')
     @api.onchange('u_result_parent_package_id')
     def _assert_one_parent_package(self):
         """ Checks that there is only one parent package per result_package_id
+            and that there is result_package_id
         """
         for ml in self:
             result_parent = ml.u_result_parent_package_id
             if result_parent:
                 result_package = ml.result_package_id
+                if not result_package:
+                    raise ValidationError(_('Cannot set result parent package to a move line without result package.'))
                 # get lines with the same result_package_id that have u_result_parent_package_id
                 lines = ml.picking_id.mapped('move_line_ids').filtered(lambda l: l.result_package_id == result_package and
                                                                                  l.u_result_parent_package_id)

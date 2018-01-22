@@ -15,7 +15,7 @@
             </xpath>
 
             <xpath expr="//field[@name='result_package_id']" position="after">
-                <field name="u_result_parent_package_id" attrs="{'readonly': [('result_package_id', '=', False)]}"
+                <field name="u_result_parent_package_id"
                     groups="stock.group_tracking_lot" />
             </xpath>
         </field>
