@@ -27,8 +27,8 @@ class QuantPackage(models.Model):
 
     @api.constrains('package_id')
     def _check_parent_not_multi_location(self):
-        for package in self:
-            package.package_id._check_not_multi_location()
+        for parent_package in self.mapped('package_id'):
+            parent_package._check_not_multi_location()
 
     def _check_not_multi_location(self):
         for package in self:
