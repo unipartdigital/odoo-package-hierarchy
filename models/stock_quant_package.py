@@ -25,6 +25,11 @@ class QuantPackage(models.Model):
     children_quant_ids = fields.One2many('stock.quant', string='All content', compute='_compute_children_quant_ids')
     children_ids = fields.One2many('stock.quant.package', 'package_id', 'Contained Packages', readonly=True)
 
+    @api.constrains('package_id')
+    def _check_parent_not_multi_location(self):
+        for package in self:
+            package.package_id._check_not_multi_location()
+
     def _check_not_multi_location(self):
         for package in self:
             locations = package.children_quant_ids.mapped('location_id')
