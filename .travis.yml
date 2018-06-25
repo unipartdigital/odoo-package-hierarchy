@@ -1,0 +1,10 @@
+sudo: required
+
+services:
+  - docker
+
+before_install:
+  - docker build -t odoo-package-hierarchy-tester .
+
+script:
+  - docker run -i -t --rm odoo-package-hierarchy-tester
