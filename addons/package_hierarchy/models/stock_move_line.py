@@ -19,7 +19,7 @@ class StockMoveLine(models.Model):
         """
         super(StockMoveLine, self)._action_done()
 
-        for ml in self:
+        for ml in self.exists():
             result_parent = ml.u_result_parent_package_id
             result_package = ml.result_package_id
             if result_parent:
