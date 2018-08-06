@@ -1,4 +1,4 @@
-from odoo import models, fields
+from odoo import fields, models, _
 from odoo.exceptions import UserError
 
 
@@ -12,7 +12,15 @@ class StockPicking(models.Model):
         if not self.x_pallet_id:
             raise UserError(_('Select a pallet.'))
 
-        self.move_line_ids.filtered(lambda l: l.x_selected).mapped('result_package_id').write({'package_id': self.x_pallet_id.id})
+        selected_lines = self.move_line_ids.filtered(lambda l: l.x_selected)
+        if not len(selected_lines):
+            # If there are no selected lines, palletise was a no-op.
+            # It wasn't intentionally being used that way, and is generally a
+            # sign that it's being called when it shouldn't be, eg after
+            # incorrect initialization, so it now raises an error instead of
+            # silently doing nothing.
+            raise UserError(_('palletise requires at least one selected line'))
+        selected_lines.mapped('result_package_id').write({'package_id': self.x_pallet_id.id})
         self.x_pallet_id._check_not_multi_location()
         self.move_line_ids.write({'x_selected': False})
         self.x_pallet_id = None
@@ -34,8 +42,7 @@ class StockPicking(models.Model):
             picking.entire_package_detail_ids = current_packages | packages
 
     def _check_entire_pack(self):
-        """ Set u_result_parent_package_id when moving entire parent package
-        """
+        """Set u_result_parent_package_id when moving entire parent package."""
         super(StockPicking, self)._check_entire_pack()
         for picking in self:
             result_packages = picking.move_line_ids.mapped('result_package_id')

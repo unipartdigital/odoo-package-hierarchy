@@ -18,7 +18,6 @@ class StockMoveLine(models.Model):
             otherwise it will be updated to be u_result_parent_package_id.
         """
         super(StockMoveLine, self)._action_done()
-
         for ml in self.exists():
             result_parent = ml.u_result_parent_package_id
             result_package = ml.result_package_id
