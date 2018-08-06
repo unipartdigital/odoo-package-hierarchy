@@ -42,7 +42,7 @@ class QuantPackage(models.Model):
     def _compute_parent_ids(self):
         for package in self.filtered(lambda p: not isinstance(p.id, models.NewId)):
             package._check_not_multi_location()
-            package.ancestor_ids = self.env['stock.quant.package'].search([('id', 'parent_of', package.id)]).ids
+            package.parent_ids = self.env['stock.quant.package'].search([('id', 'parent_of', package.id)]).ids
 
     @api.depends('package_id', 'children_ids', 'quant_ids.package_id')
     def _compute_children_quant_ids(self):
@@ -75,7 +75,8 @@ class QuantPackage(models.Model):
         elif rs._name == 'stock.quant.package':
             compare_rs = self.children_ids
         else:
-            raise ValidationError(_("Expected stock.quant.package, got %s instead."), rs._name)
+            msg = "Expected stock.quant or stock.quant.package, got %s instead."
+            raise ValidationError(_(msg) % rs._name)
         return all([a in rs for a in compare_rs])
 
     def _compute_current_picking_info(self):
