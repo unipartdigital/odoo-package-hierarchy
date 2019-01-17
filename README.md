@@ -15,6 +15,6 @@ This module adds the following features:
 ## To change
 * Change fields x_field_name to u_field_name
 * Stock.quant.packge has a field name called parent_ids but in the compute function uses ancestor_ids
-* Parent package is only shonw at package view if it is set, change it to be able to set it when it is emptye
+* Parent package is only shown at package view if it is set, change it to be able to set it when it is emptye
 * Packages button (top right of stock.picking.form view) only shows packages, update it to also show parent packages
 * x_selected still needed? Probably we can remove it and add it later if we need to palletise using UI
