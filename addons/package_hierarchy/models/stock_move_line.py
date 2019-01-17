@@ -7,8 +7,6 @@ from odoo.exceptions import ValidationError
 class StockMoveLine(models.Model):
     _inherit = 'stock.move.line'
 
-    x_selected = fields.Boolean(string=' ', help='Check this box to select')
-
     u_result_parent_package_id = fields.Many2one('stock.quant.package',
                     'Parent Destination Package', ondelete='restrict')
 
