@@ -32,62 +32,6 @@ class TestPackageHierarchy(common.BaseHierarchy):
         self.picking.action_assign()
         self.assertEqual(self.quant.reserved_quantity, apple_qty)
 
-    def test_palletise(self):
-        """Add a package to a pallet (a package containing packages)
-
-        This is necessary because Odoo11 does not have nested packages,
-        unlike Odoo 10.
-        Note that this is the helper for adding a pallet to a picking, not
-        the mechanism used for adding a pallet to a package."""
-        self.picking.x_pallet_id = self.pallet
-        self.picking.move_line_ids[0].x_selected = True
-        self.picking.palletise()
-        self.assertFalse(self.picking.move_line_ids[0].x_selected)
-        self.assertFalse(self.picking.x_pallet_id)
-        # Check that move line -> pkg id -> package's parent is the pallet
-        parent_package = self.picking.move_line_ids[0].result_package_id.package_id
-        self.assertEqual(parent_package, self.pallet)
-
-    def test_palletise_wrong_setup(self):
-        """Add a package to a pallet (a package containing packages).
-
-        This tests the invalid setups."""
-        # Make sure palletise can't work with no move lines selected.
-        with self.assertRaises(UserError):
-            self.picking.move_line_ids[0].x_selected = False
-            self.picking.x_pallet_id = self.pallet
-            self.picking.palletise()
-
-        # Make sure palletise can't work without having set a pallet
-        with self.assertRaises(UserError):
-            self.picking.x_pallet_id = None
-            self.picking.move_line_ids[0].x_selected = True
-            self.picking.palletise()
-
-
-    def test_compute_entire_package_ids(self):
-        """Check that computing package IDs for a picking in a pallet works."""
-        self.picking.x_pallet_id = self.pallet
-        self.picking.move_line_ids[0].x_selected = True
-        self.picking.palletise()
-
-        self.picking._compute_entire_package_ids()
-        # We expect the entire_package_ids to be the package that was already
-        # in the picking, and the pallet that we added with palletise.
-        expected = self.package | self.pallet
-        self.assertEqual(self.picking.entire_package_ids, expected)
-
-    def test_check_entire_pack(self):
-        """Check u_result_parent_package_id is set when moving parent package."""
-        self.picking.x_pallet_id = self.pallet
-        self.picking.move_line_ids.write({'x_selected': True})
-        self.picking.palletise()
-        # Check that the result parent package is unset before the tested method is called.
-        self.assertFalse(self.picking.move_line_ids[0].u_result_parent_package_id)
-        self.picking._check_entire_pack()
-        got = self.picking.move_line_ids[0].u_result_parent_package_id
-        self.assertEqual(got, self.pallet)
-
     def test_compute_parent_ids(self):
         """Compute the parent package IDs of a package.
 

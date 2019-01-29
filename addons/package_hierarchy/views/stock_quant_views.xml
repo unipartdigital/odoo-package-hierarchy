@@ -5,8 +5,8 @@
         <field name="inherit_id" ref="stock.quant_package_search_view"/>
         <field name="model">stock.quant.package</field>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='name']" position="replace">
-                <field name="display_name" string="Package Name"/>
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="package_id" string="Parent Package Name"/>
             </xpath>
         </field>
     </record>
