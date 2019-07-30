@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
+"""Packages with inheritance."""
+
+import logging
 
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
-
-import logging
 
 _logger = logging.getLogger(__name__)
 
@@ -29,6 +29,11 @@ class QuantPackage(models.Model):
     def _check_parent_not_multi_location(self):
         for parent_package in self.mapped('package_id'):
             parent_package._check_not_multi_location()
+
+    @api.constrains("package_id")
+    def _check_package_recursion(self):
+        if not self._check_recursion("package_id"):
+            raise ValidationError("A package cannot be its own parent.")
 
     def _check_not_multi_location(self):
         for package in self:

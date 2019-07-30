@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
 """Test odoo-package-hierarchy"""
 
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import ValidationError
+
 from . import common
 
 # Note that quant actually is being used; action_assign finds it.
@@ -228,3 +228,54 @@ class TestPackageHierarchy(common.BaseHierarchy):
 
         with self.assertRaises(ValidationError):
             picking.move_line_ids[0].u_result_parent_package_id = self.pallet
+
+
+class TestPackageInheritance(common.BaseHierarchy):
+    """Tests for inheritance and recursion."""
+
+    def setUp(self):
+        """Set up three packages."""
+        super().setUp()
+
+        Package = self.env["stock.quant.package"]
+
+        # Create 3 empty packages.
+        self.package_1 = Package.create({})
+        self.package_2 = Package.create({})
+        self.package_3 = Package.create({})
+
+    def test_self_cannot_be_parent(self):
+        """Test that a package cannot be set as its own parent."""
+        with self.assertRaises(ValidationError):
+            self.package_1.write({"package_id": self.package_1.id})
+
+    def test_child_cannot_be_parent(self):
+        """Test that a package's child cannot be set as its parent."""
+        self.package_2.write({"package_id": self.package_1.id})
+        with self.assertRaises(ValidationError):
+            self.package_1.write({"package_id": self.package_2.id})
+
+    def test_gradchild_cannot_be_parent(self):
+        """Test that a package's child's child cannot be set as its parent."""
+        self.package_2.write({"package_id": self.package_1.id})
+        self.package_3.write({"package_id": self.package_2.id})
+        with self.assertRaises(ValidationError):
+            self.package_1.write({"package_id": self.package_3.id})
+
+    def test_self_cannot_be_child(self):
+        """Test that a package cannot be set as its own child."""
+        with self.assertRaises(ValidationError):
+            self.package_1.write({"children_ids": [(4, self.package_1.id, False)]})
+
+    def test_parent_cannot_be_child(self):
+        """Test that a package's parent cannot be set as its child."""
+        self.package_1.write({"package_id": self.package_2.id})
+        with self.assertRaises(ValidationError):
+            self.package_1.write({"children_ids": [(4, self.package_2.id, False)]})
+
+    def test_grandparent_cannot_be_child(self):
+        """Test that a package's parent's parent cannot be set as its child."""
+        self.package_1.write({"package_id": self.package_2.id})
+        self.package_2.write({"package_id": self.package_3.id})
+        with self.assertRaises(ValidationError):
+            self.package_1.write({"children_ids": [(4, self.package_3.id, False)]})
