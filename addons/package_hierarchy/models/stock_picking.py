@@ -24,6 +24,10 @@ class StockPicking(models.Model):
     def _check_entire_pack(self):
         """Set u_result_parent_package_id when moving entire parent package."""
         super(StockPicking, self)._check_entire_pack()
+        self._set_u_result_parent_package_id()
+
+    def _set_u_result_parent_package_id(self):
+        """Set u_result_parent_package_id when moving entire parent package."""
         for picking in self:
             mls = picking.move_line_ids.filtered(lambda ml: not ml.u_result_parent_package_id)
             # Get result packages of move lines without result parent package
