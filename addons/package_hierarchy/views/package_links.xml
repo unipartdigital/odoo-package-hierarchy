@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_package_hierarchy_link_tree" model="ir.ui.view">
+            <field name="name">package.hierarchy.link.tree</field>
+            <field name="model">package.hierarchy.link</field>
+            <field name="arch" type="xml">
+                <tree string="Package hierarchy link">
+                    <field name="name"/>
+                    <field name="parent_id" />
+                    <field name="child_id"/>
+                    <field name="move_line_ids" widget="many2many_tags"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_package_hierarchy_link_form" model="ir.ui.view">
+            <field name="name">package.hierarchy.link.form</field>
+            <field name="model">package.hierarchy.link</field>
+            <field name="arch" type="xml">
+                <form string="Package hierarchy link">
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only"/>
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <field name="parent_id" />
+                            <field name="child_id"/>
+                            <field name="move_line_ids" widget="many2many_tags"/>
+                            <field name="company_id" invisible="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_package_hierarchy_link_form" model="ir.actions.act_window">
+            <field name="name">Package Links</field>
+            <field name="res_model">package.hierarchy.link</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <menuitem action="action_package_hierarchy_link_form" id="menu_action_package_hierarchy_link_form" parent="stock.menu_warehouse_config" sequence="2" groups="stock.group_tracking_lot"/>
+    </data>
+</odoo>
