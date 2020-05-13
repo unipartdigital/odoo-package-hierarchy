@@ -42,7 +42,7 @@ class PackageHierarchyLink(models.Model):
         string="Child package",
         ondelete="cascade",
         check_company=True,
-        required=True
+        required=True,
     )
     move_line_ids = fields.Many2many(
         "stock.move.line",
@@ -56,9 +56,7 @@ class PackageHierarchyLink(models.Model):
 
     def construct(self):
         for parent_package, links in self.groupby("parent_id"):
-            links.child_id.write(
-                {"parent_id": parent_package.id if parent_package else False}
-            )
+            links.child_id.write({"parent_id": parent_package.id if parent_package else False})
 
     @api.model
     def create_unlinks(self, packages, move_lines=False):
@@ -127,11 +125,13 @@ class PackageHierarchyLink(models.Model):
                 repeated_links = self.filtered(lambda x: x.child_id == child_id)
                 parent_ids = [link.parent_id.id for link in repeated_links]
                 if parent_ids.count(False) != 1:
-                    raise ValidationError(_("Links are proposing to move package "
-                                            "to several different packages."))
+                    raise ValidationError(
+                        _("Links are proposing to move package to several different packages.")
+                    )
             elif count > 2:
-                raise ValidationError(_("Links are proposing to move package "
-                                        "to several different packages."))
+                raise ValidationError(
+                    _("Links are proposing to move package to several different packages.")
+                )
 
         # Create chains from the links
         chains = self._return_chains()
@@ -159,8 +159,12 @@ class PackageHierarchyLink(models.Model):
             allowed_length_below = max_package_depth - length_above_chain
             for i, node in enumerate(chain):
                 if len(chain) - i + node.depth - 1 > allowed_length_below:
-                    raise ValidationError(_("Proposed link(s) would cause package depth "
-                                            "to exceed maximum permitted"))
+                    raise ValidationError(
+                        _(
+                            "Proposed link(s) would cause package depth "
+                            "to exceed maximum permitted"
+                        )
+                    )
 
     def _return_chains(self):
         """Create chains out of links in self.
@@ -203,8 +207,9 @@ class PackageHierarchyLink(models.Model):
                     current_link = link_from_child[parent]
                     chain_length += 1
             if chain_length > max_package_depth:
-                raise ValidationError(_("Proposed link(s) would cause package depth to exceed "
-                                        "maximum permitted"))
+                raise ValidationError(
+                    _("Proposed link(s) would cause package depth to exceed maximum permitted")
+                )
 
         # 4 Make sure that we traverse every link during steps 2+3, if links are missed
         # it indicates that a loop is present

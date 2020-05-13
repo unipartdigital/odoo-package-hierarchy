@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 
 
 class QuantPackage(models.Model):
-    """ Add the ability for a package to contain another package """
+    """Add the ability for a package to contain another package """
 
     _inherit = "stock.quant.package"
     _parent_name = "parent_id"
@@ -33,8 +33,10 @@ class QuantPackage(models.Model):
         "stock.quant",
         string="Aggregated quants",
         compute="_compute_aggregated_quant_ids",
-        help=("All quants that are contained within the package "
-              "and within the contained package hierarchy."),
+        help=(
+            "All quants that are contained within the package "
+            "and within the contained package hierarchy."
+        ),
     )
     children_ids = fields.One2many("stock.quant.package", "parent_id", "Contained Packages")
     depth = fields.Integer(compute="_compute_depth", store=True)
@@ -155,9 +157,11 @@ class QuantPackage(models.Model):
                     comparison_recordsets["owner_id"] |= records.owner_id
 
             # If we don't have conflicting records, add to values.
-            values = {key: recordsets
-                      for (key, recordsets) in comparison_recordsets.items()
-                      if len(recordsets) == 1}
+            values = {
+                key: recordsets
+                for (key, recordsets) in comparison_recordsets.items()
+                if len(recordsets) == 1
+            }
 
             package.location_id = values.get("location_id", False)
             package.company_id = values.get("company_id", False)
@@ -217,7 +221,7 @@ class QuantPackage(models.Model):
         return res
 
     def is_fulfilled_by(self, move_lines):
-        """ Check if a set of packages are fulfilled by a set of move lines"""
+        """Check if a set of packages are fulfilled by a set of move lines"""
         Precision = self.env["decimal.precision"]
 
         def get_key(x):
@@ -225,15 +229,20 @@ class QuantPackage(models.Model):
 
         precision_digits = Precision.precision_get("Product Unit of Measure")
         pack_qtys = self.product_quantities_by_key(get_key)
-        pack_move_lines = self.get_move_lines_of_children(aux_domain=[("id", "in", move_lines.ids)])
+        pack_move_lines = self.get_move_lines_of_children(
+            aux_domain=[("id", "in", move_lines.ids)]
+        )
 
         mls_qtys = {}
         for key, mls_grp in pack_move_lines.groupby(get_key):
             mls_qtys[key] = sum(mls_grp.mapped("product_qty"))
 
         for key in set(chain(pack_qtys.keys(), mls_qtys.keys())):
-            if float_compare(
-                pack_qtys.get(key, 0), mls_qtys.get(key, 0), precision_digits=precision_digits
-            ) > 0:
+            if (
+                float_compare(
+                    pack_qtys.get(key, 0), mls_qtys.get(key, 0), precision_digits=precision_digits
+                )
+                > 0
+            ):
                 return False
         return True

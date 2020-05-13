@@ -9,7 +9,7 @@ class ResUser(models.Model):
     _inherit = "res.users"
 
     def get_user_warehouse(self):
-        """ Get the warehouse of the user by chain of the company"""
+        """Get the warehouse of the user by chain of the company"""
         Warehouse = self.env["stock.warehouse"]
         user_id = self.env.uid
         if user_id == SUPERUSER_ID:

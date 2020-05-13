@@ -15,7 +15,7 @@ class StockMoveLine(models.Model):
     )
 
     def _action_done(self):
-        """ When a move_line is done:
+        """When a move_line is done:
           - construct the package hierarchy
           - Bypass initial multi-location checks until the moves have been completed.
              This is needed as when product is being moved in action_done, quants are created
