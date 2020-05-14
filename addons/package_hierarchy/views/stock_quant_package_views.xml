@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="quant_package_search_view" model="ir.ui.view">
+        <field name="name">package.search</field>
+        <field name="inherit_id" ref="stock.quant_package_search_view"/>
+        <field name="model">stock.quant.package</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="parent_id" string="Parent Package Name"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_quant_package_form">
+        <field name="name">stock.quant.package.form</field>
+        <field name="inherit_id" ref="stock.view_quant_package_form"/>
+        <field name="model">stock.quant.package</field>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='location_id']" position="after">
+                <field name="parent_id"/>
+                <field name="children_ids" invisible="True" />
+                <field name="children_ids" attrs="{'invisible': [('children_ids', '=', [])]}">
+                    <tree>
+                        <field name="display_name"/>
+                        <field name="name"/>
+                    </tree>
+                </field>
+            </xpath>
+
+            <xpath expr="//field[@name='quant_ids']" position="replace">
+                <field name="quant_ids" invisible="True" />
+                <field name="quant_ids" attrs="{'invisible': [('quant_ids', '=', [])]}">
+                    <tree>
+                        <field name="product_id"/>
+                        <field name="lot_id" groups="stock.group_production_lot"/>
+                        <field name="quantity"/>
+                        <field name="product_uom_id" groups="uom.group_uom"/>
+                    </tree>
+                </field>
+                <field name="aggregated_quant_ids" attrs="{'invisible': [('children_ids', '=', [])]}">
+                    <tree>
+                        <field name="package_id"/>
+                        <field name="product_id"/>
+                        <field name="lot_id" groups="stock.group_production_lot"/>
+                        <field name="quantity"/>
+                        <field name="product_uom_id" groups="uom.group_uom"/>
+                    </tree>
+                </field>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

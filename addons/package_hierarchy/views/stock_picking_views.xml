@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_picking_form" model="ir.ui.view">
+        <field name="name">stock.picking.form</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="model">stock.picking</field>
+        <field name="arch" type="xml">
+            <!-- The three entries are meant for removing the put_in_pack buttons
+                 from the 'Detailed Operations' and 'Operations' tabs -->
+            <xpath expr="//button[@name='put_in_pack']" position="replace" />
+            <xpath expr="//button[@name='put_in_pack']" position="replace" />
+            <xpath expr="//button[@name='put_in_pack']" position="replace" />
+
+            <!-- Overwrite detailed operations for moving without package
+            -->
+            <xpath expr="//notebook/page/field[@name='move_line_ids_without_package']" position="attributes">
+                <attribute name="name">move_line_ids</attribute>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>
