@@ -229,6 +229,41 @@ class TestPackageHierarchy(common.BaseHierarchy):
         with self.assertRaises(ValidationError):
             picking.move_line_ids[0].u_result_parent_package_id = self.pallet
 
+    def test_assert_picking_multiple_moves_package_moved(self):
+        """
+        Assert that a picking with multiple moves having their package moved to a pallet
+        doesn't erroneously raise an issue about a package being in multiple locations
+        """
+        Package = self.env['stock.quant.package']
+
+        pallet = Package.create({})
+        package = Package.create({})
+
+        picking = self.create_picking(self.picking_type_internal)
+
+        # Create a quant and move for apple and banana products
+        product_qty = 1
+        for product in [self.apple, self.banana]:
+            self.create_quant(
+                product.id, self.test_location_01.id, product_qty, package_id=package.id
+            )
+            self.create_move(product, product_qty, picking)
+
+        # Confirm and assign the picking
+        picking.action_confirm()
+        picking.action_assign()
+
+        # Complete picking's move lines and set a different destinatin location and parent package
+        for move_line in picking.move_line_ids:
+            move_line.qty_done = product_qty
+            move_line.location_dest_id = self.test_location_02
+            move_line.u_result_parent_package_id = pallet.id
+
+        # Mark picking as done and ensure it was completed without raising an error
+        picking.action_done()
+        self.assertEqual(picking.state, 'done', 'Picking should be in done state')
+
+
 
 class TestPackageInheritance(common.BaseHierarchy):
     """Tests for inheritance and recursion."""

@@ -1,4 +1,4 @@
-from odoo import fields, models, _
+from odoo import fields, models, api, _
 from odoo.exceptions import UserError
 
 
@@ -43,3 +43,13 @@ class StockPicking(models.Model):
                     )
                     pack_mls.write({"u_result_parent_package_id": parent_package.id})
                     mls -= pack_mls
+
+    @api.multi
+    def action_done(self):
+        """
+        Override to initially bypass multi location check for quant packages and call it manually
+        once action_done is complete and all moves are in their new location.
+        """
+        res = super(StockPicking, self.with_context(bypass_multi_location_check=True)).action_done()
+        self.mapped("move_line_ids").mapped("package_id")._check_not_multi_location()
+        return res

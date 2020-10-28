@@ -36,12 +36,13 @@ class QuantPackage(models.Model):
             raise ValidationError("A package cannot be its own parent.")
 
     def _check_not_multi_location(self):
-        for package in self:
-            locations = package.children_quant_ids.mapped('location_id')
-            if len(locations) > 1:
-                raise ValidationError(_('Package cannot be in multiple '
-                                        'locations:\n%s\n%s') % (package.name,
-                                                                 ', '.join( [l.name for l in locations])))
+        if not self.env.context.get("bypass_multi_location_check", False):
+            for package in self:
+                locations = package.children_quant_ids.mapped('location_id')
+                if len(locations) > 1:
+                    raise ValidationError(_('Package cannot be in multiple '
+                                            'locations:\n%s\n%s') % (package.name,
+                                                                    ', '.join( [l.name for l in locations])))
 
     @api.depends('package_id', 'children_ids')
     def _compute_parent_ids(self):
