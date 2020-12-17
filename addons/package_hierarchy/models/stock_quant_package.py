@@ -18,9 +18,11 @@ class QuantPackage(models.Model):
 
     display_name = fields.Char('Display Name', compute='_compute_display_name')
     package_id = fields.Many2one(
-        'stock.quant.package', 'Parent Package',
-        ondelete='restrict', readonly=True,
-        help="The package containing this item")
+        "stock.quant.package",
+        "Parent Package",
+        ondelete="restrict",
+        help="The package containing this item",
+    )
     parent_ids = fields.One2many('stock.quant.package', string='Parent Packages', compute='_compute_parent_ids')
     children_quant_ids = fields.One2many('stock.quant', string='All content', compute='_compute_children_quant_ids')
     children_ids = fields.One2many('stock.quant.package', 'package_id', 'Contained Packages', readonly=True)
