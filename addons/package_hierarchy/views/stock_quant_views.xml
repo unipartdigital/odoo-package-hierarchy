@@ -18,7 +18,7 @@
         <field name="arch" type="xml">
 
             <xpath expr="//field[@name='location_id']" position="after">
-                <field name="package_id" readonly="1" attrs="{'invisible': [('package_id', '=', False)]}"/>
+                <field name="package_id" />
                 <field name="children_ids" invisible="True" />
             </xpath>
 
