@@ -368,7 +368,7 @@ class TestPackageHierarchy(common.BaseHierarchy):
         picking2.action_confirm()
         picking2.action_assign()
         picking2.move_line_ids.qty_done = 1
-        picking2.action_done()
+        picking2._action_done()
         self.assertEqual(pallet.location_id, self.test_location_02)
         self.assertEqual(boxes.location_id, self.test_location_02)
         self.assertEqual(boxes.parent_id, pallet)
@@ -398,7 +398,7 @@ class TestPackageHierarchy(common.BaseHierarchy):
         self.assertEqual(links.child_id, box1)
         for ml in picking2.move_line_ids:
             ml.qty_done = ml.product_qty
-        picking2.action_done()
+        picking2._action_done()
         self.assertEqual(pallet.location_id, self.test_location_01)
         self.assertEqual(box1.location_id, self.test_location_02)
         self.assertEqual(box2.location_id, self.test_location_01)

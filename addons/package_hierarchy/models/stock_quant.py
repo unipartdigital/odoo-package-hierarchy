@@ -11,9 +11,7 @@ class StockQuant(models.Model):
 
         We cannot just check the top-parent package as the package may not have a parent.
         """
-        context = self.env.context
-
-        if not context.get("bypass_quant_multi_loc_checks"):
+        if not self._context.get("bypass_quant_multi_loc_checks"):
             self.package_id._check_not_multi_location()
             self.package_id._check_top_parent_not_multi_location()
 

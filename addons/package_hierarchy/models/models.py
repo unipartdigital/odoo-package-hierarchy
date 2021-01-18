@@ -2,8 +2,7 @@
 
 import itertools
 from operator import itemgetter
-from .. import tools
-
+from odoo.addons.udes_common import tools
 from odoo import models
 
 # TODO pull this out of edi and into a stand-alone module so we don't need the
