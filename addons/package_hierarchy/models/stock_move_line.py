@@ -23,8 +23,6 @@ class StockMoveLine(models.Model):
              This may result in a temporary situation where a package contains quants from both
              the source and destination location.
         """
-        Quant = self.env["stock.quant"]
-
         super(StockMoveLine, self.with_context(bypass_quant_multi_loc_checks=True))._action_done()
 
         for dest_location, move_lines in self.exists().groupby("location_dest_id"):

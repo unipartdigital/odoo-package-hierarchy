@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from odoo.tests import common
+from odoo.tests import common, tagged
 
-
-@common.at_install(False)
-@common.post_install(True)
+@tagged('-at_install', 'post_install')
 class BaseHierarchy(common.SavepointCase):
     @classmethod
     def setUpClass(cls):

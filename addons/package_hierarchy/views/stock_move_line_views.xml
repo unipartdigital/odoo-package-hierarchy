@@ -9,7 +9,8 @@
 
             <xpath expr="//field[@name='result_package_id']" position="after">
                 <field name="id" invisible="1"/>
-                <field name="u_result_package_link_ids" widget="many2many_tags" groups="stock.group_tracking_lot" context="{'default_move_line_ids': [(4, id)]}"/>
+                <field name="u_result_package_link_ids" widget="many2many_tags" groups="stock.group_tracking_lot"
+                       context="{'default_move_line_ids': [(4, id)], 'default_company_id': company_id}"/>
             </xpath>
         </field>
     </record>
