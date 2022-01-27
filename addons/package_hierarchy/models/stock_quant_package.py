@@ -211,8 +211,8 @@ class QuantPackage(models.Model):
 
     def product_quantities_by_key(self, get_key=lambda q: q.product_id):
         """This function computes the product quantities the given package grouped by a key
-            Args:
-                get_key: a callable which takes a quant and returns the key
+        Args:
+            get_key: a callable which takes a quant and returns the key
 
         """
         res = {}
@@ -229,9 +229,7 @@ class QuantPackage(models.Model):
 
         precision_digits = Precision.precision_get("Product Unit of Measure")
         pack_qtys = self.product_quantities_by_key(get_key)
-        pack_move_lines = self.get_move_lines_of_children(
-            aux_domain=[("id", "in", move_lines.ids)]
-        )
+        pack_move_lines = self.get_move_lines_of_children(aux_domain=[("id", "in", move_lines.ids)])
 
         mls_qtys = {}
         for key, mls_grp in pack_move_lines.groupby(get_key):
@@ -246,3 +244,31 @@ class QuantPackage(models.Model):
             ):
                 return False
         return True
+
+    def _get_package_link_structure(self):
+        """Get package link structure, in case not founded after specific search args,
+        create a new one"""
+        PackageHierarchyLink = self.env["package.hierarchy.link"]
+
+        self.ensure_one()
+        hierarchy_lines = PackageHierarchyLink.browse()
+        package = self
+        while package.parent_id:
+            parent_hierarchy_lines = PackageHierarchyLink.search(
+                [("child_id", "=", package.id), ("parent_id", "=", package.parent_id.id)], limit=1
+            )
+            if not parent_hierarchy_lines:
+                parent_hierarchy_lines = PackageHierarchyLink.create(
+                    {"child_id": package.id, "parent_id": package.parent_id.id}
+                )
+            hierarchy_lines = hierarchy_lines | parent_hierarchy_lines
+            package = package.parent_id
+        package_hierarchy_lines = PackageHierarchyLink.search(
+            [("child_id", "=", package.id), ("parent_id", "=", False)], limit=1
+        )
+        if not package_hierarchy_lines:
+            package_hierarchy_lines = PackageHierarchyLink.create(
+                {"child_id": package.id, "parent_id": False}
+            )
+        hierarchy_lines = hierarchy_lines | package_hierarchy_lines
+        return hierarchy_lines.ids
