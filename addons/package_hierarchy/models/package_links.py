@@ -52,7 +52,7 @@ class PackageHierarchyLink(models.Model):
         ondelete="cascade",
         check_company=True,
     )
-    company_id = fields.Many2one("res.company", default=False)
+    company_id = fields.Many2one("res.company", default=lambda self: self.env.company)
 
     def construct(self):
         for parent_package, links in self.groupby("parent_id"):
