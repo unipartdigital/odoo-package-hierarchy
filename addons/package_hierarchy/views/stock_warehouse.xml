@@ -9,7 +9,7 @@
                 <xpath expr="//page[1]" position="after">
                     <page string="UDES Configuration" groups='base.group_no_one'>
                         <group name="udes_stock_config" string="Stock Config">
-                            <field name="u_max_package_depth" />
+                            <field name="x_max_package_depth" />
                         </group>
                     </page>
                 </xpath>

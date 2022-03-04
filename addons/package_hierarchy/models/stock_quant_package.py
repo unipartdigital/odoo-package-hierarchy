@@ -25,11 +25,10 @@ class QuantPackage(models.Model):
         ondelete="restrict",
         help="The package containing this item",
     )
-    top_parent_id = fields.Many2one(
+    x_top_parent_id = fields.Many2one(
         "stock.quant.package", compute="_compute_top_parent_id", store=True
     )
-
-    aggregated_quant_ids = fields.One2many(
+    x_aggregated_quant_ids = fields.One2many(
         "stock.quant",
         string="Aggregated quants",
         compute="_compute_aggregated_quant_ids",
@@ -38,46 +37,46 @@ class QuantPackage(models.Model):
             "and within the contained package hierarchy."
         ),
     )
-    children_ids = fields.One2many("stock.quant.package", "parent_id", "Contained Packages")
-    depth = fields.Integer(compute="_compute_depth", store=True)
+    child_ids = fields.One2many("stock.quant.package", "parent_id", "Contained Packages")
+    x_depth = fields.Integer(string="Depth", compute="_compute_depth", store=True)
 
-    @api.depends("parent_id", "parent_id.top_parent_id")
+    @api.depends("parent_id", "parent_id.x_top_parent_id")
     def _compute_top_parent_id(self):
         for pack in self:
             parent = pack.parent_id
             if not parent:
-                pack.top_parent_id = False
-            elif parent.top_parent_id:
-                pack.top_parent_id = parent.top_parent_id
+                pack.x_top_parent_id = False
+            elif parent.x_top_parent_id:
+                pack.x_top_parent_id = parent.x_top_parent_id
             else:
-                pack.top_parent_id = parent
+                pack.x_top_parent_id = parent
 
-    @api.constrains("parent_id", "children_ids")
-    @api.onchange("parent_id", "children_ids")
+    @api.constrains("parent_id", "child_ids")
+    @api.onchange("parent_id", "child_ids")
     def _constrain_depth(self):
-        max_package_depth = self.env.user.get_user_warehouse().u_max_package_depth
+        max_package_depth = self.env.user.get_user_warehouse().x_max_package_depth
         for pack in self:
-            top_parent = pack.top_parent_id
-            if top_parent.depth > max_package_depth:
+            top_parent = pack.x_top_parent_id
+            if top_parent.x_depth > max_package_depth:
                 raise ValidationError(_("Maximum package depth exceeded."))
 
-    @api.depends("children_ids", "children_ids.depth")
+    @api.depends("child_ids", "child_ids.x_depth")
     def _compute_depth(self):
         """Is the max depth of any children"""
         for pack in self:
-            children = pack.children_ids
+            children = pack.child_ids
             if not children:
-                pack.depth = 1
+                pack.x_depth = 1
             else:
-                pack.depth = max(pack.children_ids.mapped("depth")) + 1
+                pack.x_depth = max(pack.child_ids.mapped("x_depth")) + 1
 
-    @api.constrains("top_parent_id")
+    @api.constrains("x_top_parent_id")
     def _check_top_parent_not_multi_location(self):
-        # Need trigger aggregated_quant_ids of top parent to be recomputed
-        # before checking for multi-location as this may not have happend
+        # Need trigger x_aggregated_quant_ids of top parent to be recomputed
+        # before checking for multi-location as this may not have happened
         # automatically.
-        self.top_parent_id._compute_aggregated_quant_ids()
-        self.top_parent_id._check_not_multi_location()
+        self.x_top_parent_id._compute_aggregated_quant_ids()
+        self.x_top_parent_id._check_not_multi_location()
 
     @api.constrains("parent_id")
     def _check_package_recursion(self):
@@ -86,7 +85,7 @@ class QuantPackage(models.Model):
 
     def _check_not_multi_location(self):
         for package in self:
-            locations = package.aggregated_quant_ids.location_id
+            locations = package.x_aggregated_quant_ids.location_id
             if len(locations) > 1:
                 raise ValidationError(
                     _("Package cannot be in multiple " "locations:\n%s\n%s")
@@ -103,19 +102,19 @@ class QuantPackage(models.Model):
         return packages - self
 
     @api.depends(
-        "children_ids",
+        "child_ids",
         "quant_ids.package_id",
-        "children_ids.quant_ids",
-        "children_ids.quant_ids.package_id",
+        "child_ids.quant_ids",
+        "child_ids.quant_ids.package_id",
     )
     def _compute_aggregated_quant_ids(self):
         Quant = self.env["stock.quant"]
 
         for package in self:
             if isinstance(package.id, models.NewId):
-                package.aggregated_quant_ids = package.quant_ids
+                package.x_aggregated_quant_ids = package.quant_ids
             else:
-                package.aggregated_quant_ids = Quant.search(
+                package.x_aggregated_quant_ids = Quant.search(
                     [
                         ("package_id", "child_of", package.id),
                         "|",
@@ -131,11 +130,11 @@ class QuantPackage(models.Model):
         "quant_ids.owner_id",
         "quant_ids.quantity",
         "quant_ids.reserved_quantity",
-        "children_ids",
-        "children_ids.parent_id",
-        "children_ids.location_id",
-        "children_ids.company_id",
-        "children_ids.owner_id",
+        "child_ids",
+        "child_ids.parent_id",
+        "child_ids.location_id",
+        "child_ids.company_id",
+        "child_ids.owner_id",
     )
     def _compute_package_info(self):
         Location = self.env["stock.location"]
@@ -150,7 +149,7 @@ class QuantPackage(models.Model):
                 "owner_id": Partner,
             }
 
-            for records in [package.quant_ids, package.children_ids]:
+            for records in [package.quant_ids, package.child_ids]:
                 if records:
                     comparison_recordsets["location_id"] |= records[0].location_id
                     comparison_recordsets["company_id"] |= records.company_id

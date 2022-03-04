@@ -21,7 +21,7 @@ class TestPackageHierarchy(common.BaseHierarchy):
         Package = self.env["stock.quant.package"]
 
         self.env.user.get_user_warehouse().write(
-            {"u_max_package_depth": 4,}
+            {"x_max_package_depth": 4}
         )
 
         self.package = Package.create({})  # an empty package is enough
@@ -45,7 +45,7 @@ class TestPackageHierarchy(common.BaseHierarchy):
         self.assertEqual(set(list1), set(list2))
 
     def test_compute_top_parent_id(self):
-        """Test that the top_parent_id is correctly computed and
+        """Test that the x_top_parent_id is correctly computed and
         is automatically re-computed (to correct value) on change to hierarchy"""
         Package = self.env["stock.quant.package"]
 
@@ -53,25 +53,25 @@ class TestPackageHierarchy(common.BaseHierarchy):
         sub_box = Package.create({})
         box.parent_id = self.package
         sub_box.parent_id = box
-        self.assertEqual(box.top_parent_id, self.package)
+        self.assertEqual(box.x_top_parent_id, self.package)
         self.package.parent_id = self.pallet
-        self.assertEqual(self.package.top_parent_id, self.pallet)
-        self.assertFalse(self.pallet.top_parent_id)
-        self.assertEqual(box.top_parent_id, self.pallet)
-        self.assertEqual(sub_box.top_parent_id, self.pallet)
+        self.assertEqual(self.package.x_top_parent_id, self.pallet)
+        self.assertFalse(self.pallet.x_top_parent_id)
+        self.assertEqual(box.x_top_parent_id, self.pallet)
+        self.assertEqual(sub_box.x_top_parent_id, self.pallet)
 
     def test_compute_depth(self):
-        """Test that the depth is correctly calulated and updated."""
+        """Test that the x_depth is correctly calulated and updated."""
         Package = self.env["stock.quant.package"]
 
         box = Package.create({})
         self.package.parent_id = self.pallet
-        self.assertEqual(self.pallet.depth, 2)
-        self.assertEqual(self.package.depth, 1)
+        self.assertEqual(self.pallet.x_depth, 2)
+        self.assertEqual(self.package.x_depth, 1)
         box.parent_id = self.package
-        self.assertEqual(self.pallet.depth, 3)
-        self.assertEqual(self.package.depth, 2)
-        self.assertEqual(box.depth, 1)
+        self.assertEqual(self.pallet.x_depth, 3)
+        self.assertEqual(self.package.x_depth, 2)
+        self.assertEqual(box.x_depth, 1)
 
     def test_check_not_multi_location(self):
         """Test that the happy case where quants are in the same location
@@ -103,7 +103,7 @@ class TestPackageHierarchy(common.BaseHierarchy):
             self.apple.id, self.test_location_02.id, second_qty, package_id=package2.id
         )
         # This does not need to duplicate the checks that each child is valid;
-        # _check_not_multi_location is called via aggregated_quant_ids.
+        # _check_not_multi_location is called via x_aggregated_quant_ids.
         self.package.parent_id = self.pallet
         # Expect adding a package at another location to a pallet to fail
         with self.assertRaises(ValidationError):
@@ -164,7 +164,7 @@ class TestPackageHierarchy(common.BaseHierarchy):
         zero_qty_quant = self.create_quant(
             self.apple.id, self.test_location_01.id, 0, package_id=self.pallet.id
         )
-        self.assertEqual(self.pallet.aggregated_quant_ids.ids, [qty_quant.id])
+        self.assertEqual(self.pallet.x_aggregated_quant_ids.ids, [qty_quant.id])
 
         self.package.parent_id = self.pallet
         package_quant = self.create_quant(
@@ -172,14 +172,14 @@ class TestPackageHierarchy(common.BaseHierarchy):
         )
 
         self.assert_lists_are_equivalent(
-            self.pallet.aggregated_quant_ids.ids, [qty_quant.id, self.quant.id, package_quant.id]
+            self.pallet.x_aggregated_quant_ids.ids, [qty_quant.id, self.quant.id, package_quant.id]
         )
 
         # Change parent of package to a new pallet and check the original pallet's
         # children quants are correct
         pallet2 = Package.create({})
         self.package.parent_id = pallet2
-        self.assertEqual(self.pallet.aggregated_quant_ids.ids, [qty_quant.id])
+        self.assertEqual(self.pallet.x_aggregated_quant_ids.ids, [qty_quant.id])
 
     def test_aggregated_quant_ids_higher_depth(self):
         """Make sure _compute_aggregated_quant_ids for depths greater than 2"""
@@ -198,7 +198,7 @@ class TestPackageHierarchy(common.BaseHierarchy):
         )
 
         self.assert_lists_are_equivalent(
-            self.package.aggregated_quant_ids.ids,
+            self.package.x_aggregated_quant_ids.ids,
             [self.quant.id, box_quant.id, box_child_quant.id],
         )
 
@@ -345,7 +345,7 @@ class TestPackageHierarchy(common.BaseHierarchy):
         picking.action_confirm()
         picking.action_assign()
 
-        self.assertFalse(picking.move_line_ids[0].u_result_package_link_ids)
+        self.assertFalse(picking.move_line_ids[0].x_result_package_link_ids)
 
     def test_action_done(self):
         """Test that action done works as expected with package hierarchies
@@ -392,7 +392,7 @@ class TestPackageHierarchy(common.BaseHierarchy):
         move2 = self.create_move(self.banana, 4, picking2)
         picking2.action_confirm()
         picking2.action_assign()
-        links = picking2.move_line_ids.u_result_package_link_ids
+        links = picking2.move_line_ids.x_result_package_link_ids
         self.assertEqual(len(links), 1)
         self.assertFalse(links.parent_id)
         self.assertEqual(links.child_id, box1)
@@ -415,7 +415,7 @@ class TestPackageInheritance(common.BaseHierarchy):
 
         # Set maximum package depth to 3
         self.env.user.get_user_warehouse().write(
-            {"u_max_package_depth": 3,}
+            {"x_max_package_depth": 3}
         )
 
         Package = self.env["stock.quant.package"]
@@ -447,23 +447,23 @@ class TestPackageInheritance(common.BaseHierarchy):
     def test_self_cannot_be_child(self):
         """Test that a package cannot be set as its own child."""
         with self.assertRaises(ValidationError):
-            self.package_a.write({"children_ids": [(4, self.package_a.id, False)]})
+            self.package_a.write({"child_ids": [(4, self.package_a.id, False)]})
 
     def test_parent_cannot_be_child(self):
         """Test that a package's parent cannot be set as its child."""
         self.package_a.write({"parent_id": self.package_b.id})
         with self.assertRaises(ValidationError):
-            self.package_a.write({"children_ids": [(4, self.package_b.id, False)]})
+            self.package_a.write({"child_ids": [(4, self.package_b.id, False)]})
 
     def test_grandparent_cannot_be_child(self):
         """Test that a package's parent's parent cannot be set as its child."""
         self.package_a.write({"parent_id": self.package_b.id})
         self.package_b.write({"parent_id": self.package_c.id})
         with self.assertRaises(ValidationError):
-            self.package_a.write({"children_ids": [(4, self.package_c.id, False)]})
+            self.package_a.write({"child_ids": [(4, self.package_c.id, False)]})
 
     def test_max_package_depth_cannot_be_exceeded(self):
-        """Test that warehouse max package depth canoot be exceeded"""
+        """Test that warehouse max package depth cannot be exceeded"""
         self.package_b.write({"parent_id": self.package_a.id})
         self.package_c.write({"parent_id": self.package_b.id})
         with self.assertRaises(ValidationError):
@@ -479,7 +479,7 @@ class TestPackageHierarchyLinks(common.BaseHierarchy):
 
         # Set maximum package depth to 4
         self.env.user.get_user_warehouse().write(
-            {"u_max_package_depth": 4,}
+            {"x_max_package_depth": 4}
         )
 
         Package = self.env["stock.quant.package"]
@@ -750,7 +750,7 @@ class TestPackageHierarchyLinksValidation(common.BaseHierarchy):
         PackageHierarchyLink = self.env["package.hierarchy.link"]
 
         self.env.user.get_user_warehouse().write(
-            {"u_max_package_depth": 3,}
+            {"x_max_package_depth": 3}
         )
         Package = self.env["stock.quant.package"]
         self.package1 = Package.create({})

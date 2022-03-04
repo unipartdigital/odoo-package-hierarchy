@@ -105,14 +105,14 @@ class PackageHierarchyLink(models.Model):
         # Add the move lines of associated moves
         move_lines |= move_lines.move_id.move_line_ids
         # Add the links of these move lines
-        links |= move_lines.u_result_package_link_ids
+        links |= move_lines.x_result_package_link_ids
         links._validate_links()
 
     def _validate_links(self):
         """Validate package links to ensure that no constraints are broken.
         Current constraints are package depth and package loops.
         """
-        max_package_depth = self.env.user.get_user_warehouse().u_max_package_depth
+        max_package_depth = self.env.user.get_user_warehouse().x_max_package_depth
 
         # Sanitize links, check for repeated children as we should not have any
         # Only exception may be moving a package from one package into another package. This will
@@ -158,7 +158,7 @@ class PackageHierarchyLink(models.Model):
             # Check depth of each node in the current to see if there is a depth violation
             allowed_length_below = max_package_depth - length_above_chain
             for i, node in enumerate(chain):
-                if len(chain) - i + node.depth - 1 > allowed_length_below:
+                if len(chain) - i + node.x_depth - 1 > allowed_length_below:
                     raise ValidationError(
                         _(
                             "Proposed link(s) would cause package depth "
@@ -172,7 +172,7 @@ class PackageHierarchyLink(models.Model):
         """
         # 1 Get all terminal children and parents
         # (excluding unlinks as they do not impact the chains)
-        max_package_depth = self.env.user.get_user_warehouse().u_max_package_depth
+        max_package_depth = self.env.user.get_user_warehouse().x_max_package_depth
 
         links_excluding_unlinks = self.filtered(lambda l: l.parent_id)
         parents = links_excluding_unlinks.parent_id

@@ -19,8 +19,9 @@
 
             <xpath expr="//field[@name='location_id']" position="after">
                 <field name="parent_id"/>
-                <field name="children_ids" invisible="True" />
-                <field name="children_ids" attrs="{'invisible': [('children_ids', '=', [])]}">
+                <field name="x_depth"/>
+                <field name="child_ids" invisible="True" />
+                <field name="child_ids" attrs="{'invisible': [('child_ids', '=', [])]}">
                     <tree>
                         <field name="display_name"/>
                         <field name="name"/>
@@ -38,7 +39,7 @@
                         <field name="product_uom_id" groups="uom.group_uom"/>
                     </tree>
                 </field>
-                <field name="aggregated_quant_ids" attrs="{'invisible': [('children_ids', '=', [])]}">
+                <field name="x_aggregated_quant_ids" attrs="{'invisible': [('child_ids', '=', [])]}">
                     <tree>
                         <field name="package_id"/>
                         <field name="product_id"/>
