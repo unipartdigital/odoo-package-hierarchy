@@ -7,7 +7,7 @@ from odoo.exceptions import ValidationError
 class StockMoveLine(models.Model):
     _inherit = "stock.move.line"
 
-    u_result_package_link_ids = fields.Many2many(
+    x_result_package_link_ids = fields.Many2many(
         "package.hierarchy.link",
         column1="move_line_id",
         column2="link_id",
@@ -27,7 +27,7 @@ class StockMoveLine(models.Model):
         super(StockMoveLine, self.with_context(bypass_quant_multi_loc_checks=True))._action_done()
 
         for dest_location, move_lines in self.exists().groupby("location_dest_id"):
-            move_lines.u_result_package_link_ids.construct()
+            move_lines.x_result_package_link_ids.construct()
 
         self.result_package_id.quant_ids._constrain_package()
 
