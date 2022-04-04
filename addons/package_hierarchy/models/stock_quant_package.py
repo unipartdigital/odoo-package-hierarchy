@@ -30,7 +30,7 @@ class QuantPackage(models.Model):
     )
     x_aggregated_quant_ids = fields.One2many(
         "stock.quant",
-        string="Aggregated quants",
+        string="Aggregated Quants",
         compute="_compute_aggregated_quant_ids",
         help=(
             "All quants that are contained within the package "

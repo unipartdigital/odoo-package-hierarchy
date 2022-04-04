@@ -9,7 +9,7 @@ class StockMoveLine(models.Model):
         "package.hierarchy.link",
         column1="move_line_id",
         column2="link_id",
-        string="Package hierarchy links",
+        string="Package Links",
         check_company=True,
     )
 

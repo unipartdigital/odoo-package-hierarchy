@@ -33,11 +33,11 @@ class PackageHierarchyLink(models.Model):
     name = fields.Char(index=True, store=True, compute="_compute_name")
 
     parent_id = fields.Many2one(
-        "stock.quant.package", string="Parent package", ondelete="cascade", check_company=True
+        "stock.quant.package", string="Parent Package", ondelete="cascade", check_company=True
     )
     child_id = fields.Many2one(
         "stock.quant.package",
-        string="Child package",
+        string="Child Package",
         ondelete="cascade",
         check_company=True,
         required=True,
