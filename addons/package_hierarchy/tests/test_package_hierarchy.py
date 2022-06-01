@@ -543,6 +543,41 @@ class TestPackageHierarchyLinks(common.BaseHierarchy):
         self.assertEqual(len(package_b_unlinks), 1)
         self.assertEqual(package_b_unlinks.move_line_ids[0].id, move_line2.id)
 
+    def test_create_hierarchy_from_packages(self):
+        """Make sure that get_or_construct_hierarchy_from_packages works as expected"""
+        Package = self.env["stock.quant.package"]
+        PackageHierarchyLink = self.env["package.hierarchy.link"]
+
+        empty_hierarchy_link = PackageHierarchyLink.browse()
+        empty_package = Package.browse()
+        # Test that it doesn't raise error and returns empty recordset of hierarchy link
+        hierarchy_link = Package.get_or_construct_hierarchy_from_packages()
+        self.assertEqual(hierarchy_link, empty_hierarchy_link)
+        # Test that it returns 1 hierarchy link when it is called from a single package and the
+        # returned hierarchy link is the expected one
+        hierarchy_link = self.package_a.get_or_construct_hierarchy_from_packages()
+        self.assertEqual(len(hierarchy_link), 1)
+        self.assertEqual(hierarchy_link.child_id, self.package_a)
+        self.assertEqual(hierarchy_link.parent_id, empty_package)
+        # Test that it returns some hierarchy links when it is called from some packages and the
+        # returned hierarchy links are the expected ones.
+        packages = self.package_d | self.package_b | self.package_a
+        hierarchy_links = packages.get_or_construct_hierarchy_from_packages()
+        self.assertEqual(len(hierarchy_links), 3)
+        self.assertEqual(hierarchy_links[0].child_id, self.package_d)
+        self.assertEqual(hierarchy_links[0].parent_id, self.package_b)
+        self.assertEqual(hierarchy_links[1].child_id, self.package_b)
+        self.assertEqual(hierarchy_links[1].parent_id, self.package_a)
+        self.assertEqual(hierarchy_links[2].child_id, self.package_a)
+        self.assertEqual(hierarchy_links[2].parent_id, empty_package)
+        # Test if we add a new package and the returned hierarchy links are an
+        # extend of previous hierarchy links
+        self.package_t = Package.create({"name": "T"})
+        new_packages = self.package_t | self.package_d | self.package_b | self.package_a
+        new_hierarchy_links = new_packages.get_or_construct_hierarchy_from_packages()
+        self.assertEqual(len(new_hierarchy_links), 4)
+        self.assertTrue(set(hierarchy_links) <= set(new_hierarchy_links))
+
     def test_compute_name(self):
         """Make sure the package link name is correctly computed"""
         PackageHierarchyLink = self.env["package.hierarchy.link"]

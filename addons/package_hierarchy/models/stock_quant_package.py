@@ -1,13 +1,22 @@
 """Packages with inheritance."""
 
 import logging
-from itertools import chain
+from itertools import chain, tee
 
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 from odoo.tools.float_utils import float_is_zero, float_compare
 
 _logger = logging.getLogger(__name__)
+
+
+def pairwise(original_list):
+    """"
+    Returning couples of a list with N elements, example:
+    s(N) -> [(s0,s1), (s1,s2), (s2, s3), ... (sN-1, sN)]"""
+    a, b = tee(original_list)
+    next(b, None)
+    return zip(a, b)
 
 
 class QuantPackage(models.Model):
@@ -271,3 +280,42 @@ class QuantPackage(models.Model):
             )
         hierarchy_lines = hierarchy_lines | package_hierarchy_lines
         return hierarchy_lines.ids
+
+    def get_or_construct_hierarchy_from_packages(self):
+        """Getting or Creating (if any of hierarchy nodes doesnt exist) all hierarchy links of
+        ordered packages that are in self recordset.
+
+        :return: recordset of package hierarchy links
+        """
+        # Setting self to sudo to over pass access rights at this moment, have to be reviewed later
+        self = self.sudo()
+        PackageHierarchyLink = self.env["package.hierarchy.link"]
+
+        # Empty recordset
+        package_hierarchies = PackageHierarchyLink.browse()
+        if not self.exists():
+            return package_hierarchies
+        # Looping in pairs through packages which are ordered
+        for package, parent_package in pairwise(self):
+            hierarchy_link = PackageHierarchyLink.search(
+                [("child_id", "=", package.id), ("parent_id", "=", parent_package.id)], limit=1
+            )
+            if not hierarchy_link:
+                hierarchy_link = PackageHierarchyLink.create({
+                    "child_id": package.id,
+                    "parent_id": parent_package.id
+                })
+            package_hierarchies |= hierarchy_link
+        # If is only one record in self will not enter in the loop and will
+        # need to find the unlink for self
+        if len(self) == 1:
+            parent_package = self
+        hierarchy_link = PackageHierarchyLink.search(
+                [("child_id", "=", parent_package.id), ("parent_id", "=", False)], limit=1
+            )
+        if not hierarchy_link:
+            hierarchy_link = PackageHierarchyLink.create({
+                "child_id": parent_package.id
+            })
+        package_hierarchies |= hierarchy_link
+        return package_hierarchies
