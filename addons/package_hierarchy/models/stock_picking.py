@@ -1,25 +1,41 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
 
+import time
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
 
     def _compute_entire_package_ids(self):
         """Add parent packages to picking."""
+        print("#"*30)
+        s = time.time()
         super(StockPicking, self)._compute_entire_package_ids()
-
+        e = time.time()
+        print(f"Took {e-s} to read XXX step 1")
         for picking in self:
             packages = self.env["stock.quant.package"]
+            m1 = time.time()
             current_packages = picking.entire_package_detail_ids | picking.entire_package_ids
-
+            m2 = time.time()
+            print(f"Took {m2 - m1} to read XXX mid")
+            # for parent, children_packages in current_packages.groupby("package_id"):
+            #     if len(parent.children_ids - children_packages) == 0:
+            #         packages |= parent
+            current_packages.with_context(prefetch_fields=False).mapped("package_id")
             for package in current_packages:
                 parent_pack = package.package_id
                 if parent_pack and parent_pack.is_all_contents_in(current_packages):
                     packages |= parent_pack
+            m3 = time.time()
+            print(f"Took {m3 - m2} to read XXX mid 2")
 
             picking.entire_package_ids = current_packages | packages
             picking.entire_package_detail_ids = current_packages | packages
+            m4 = time.time()
+            print(f"Took {m4 - m3} to read XXX mid 3")
+        e2 = time.time()
+        print(f"Took {e2-e} to read XXX extra")
 
     def _check_entire_pack(self):
         """Set u_result_parent_package_id when moving entire parent package."""
