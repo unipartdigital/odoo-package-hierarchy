@@ -50,7 +50,66 @@ class PackageHierarchyLink(models.Model):
         ondelete="cascade",
         check_company=True,
     )
+    has_move_line = fields.Boolean(compute="_compute_has_move_line", store=True)
     company_id = fields.Many2one("res.company", default=lambda self: self.env.company)
+
+    @api.depends("move_line_ids")
+    def _compute_has_move_line(self):
+        for record in self:
+            record.has_move_line = bool(record.move_line_ids)
+
+    @api.model
+    def create(self, vals):
+        """
+        Extend create to prevent creating duplicate parent/child relations
+        and instead return the duplicate. This is in place of a constraint
+        as it is more user friendly
+        (instead of raising an error will simply return the existing link)
+        """
+        PackageHierarchyLink = self.env["package.hierarchy.link"]
+
+        move_line_ids = vals.get("move_line_ids")
+        if move_line_ids:
+            move_line_ids = move_line_ids[0][2]
+        existing_link = PackageHierarchyLink.search_read(
+            [
+                ("parent_id", "=", vals.get("parent_id")),
+                ("child_id", "=", vals.get("child_id")),
+                ("move_line_ids", "=", move_line_ids if move_line_ids else False),
+            ],
+            ["id"],
+        )
+        if existing_link:
+            return PackageHierarchyLink.browse(existing_link[0].get("id"))
+        else:
+            return super().create(vals)
+
+    def write(self, vals):
+        """
+        Extend write to check for duplicate parent/child relations
+        to raise if the link would become a duplicate
+        """
+        PackageHierarchyLink = self.env["package.hierarchy.link"]
+
+        # It's easier to just perform the write and roll-back if it is a duplicate
+        res = super().write(vals)
+        for record in self:
+            move_line_ids = record.move_line_ids.ids
+            links = PackageHierarchyLink.search_read(
+                [
+                    ("parent_id", "=", record.parent_id.id),
+                    ("child_id", "=", record.child_id.id),
+                    ("move_line_ids", "=", move_line_ids if move_line_ids else False),
+                ],
+                ["id"],
+            )
+            if len(links) > 1:
+                raise ValidationError(
+                    _(
+                        "You can not have more than one package link with the same parent/child relationship"
+                    )
+                )
+        return res
 
     def construct(self):
         for parent_package, links in self.groupby("parent_id"):
@@ -84,7 +143,7 @@ class PackageHierarchyLink(models.Model):
             link.name = (
                 "Link %s and %s" % (link.parent_id.name, link.child_id.name)
                 if link.parent_id and link.child_id
-                else "Unlink parent of %s" % link.child_id.name
+                else "Unlink Parent of %s" % link.child_id.name
             )
 
     @api.constrains("parent_id", "child_id")
