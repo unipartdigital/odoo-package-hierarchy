@@ -405,6 +405,44 @@ class TestPackageHierarchy(common.BaseHierarchy):
         self.assertFalse(box1.parent_id)
         self.assertEqual(box2.parent_id, pallet)
 
+    def test_duplicate_link_creation(self):
+        """
+        Test when creating a duplicate link,
+        the duplicate is returned instead of creating a new link
+        """
+        Package = self.env["stock.quant.package"]
+        PackageLink = self.env["package.hierarchy.link"]
+        box1 = Package.create({})
+        box2 = Package.create({})
+        box3 = Package.create({})
+        box4 = Package.create({})
+        link1 = PackageLink.create({"parent_id": box1.id, "child_id": box2.id})
+        link2 = PackageLink.create({"parent_id": box1.id, "child_id": box2.id})
+        # Non-unique links end up being the same record
+        self.assertEqual(link1, link2)
+        link3 = PackageLink.create({"parent_id": box3.id, "child_id": box4.id})
+        # But unique links are newly created
+        self.assertEqual((link1 == link3), False)
+
+
+    def test_duplicate_link_modification(self):
+        """
+        Test when writing a value that would cause a link to be a duplicate,
+        a ValidationError is triggered
+        """
+        Package = self.env["stock.quant.package"]
+        PackageLink = self.env["package.hierarchy.link"]
+        box1 = Package.create({})
+        box2 = Package.create({})
+        box3 = Package.create({})
+        box4 = Package.create({})
+        link1 = PackageLink.create({"parent_id": box1.id, "child_id": box2.id})
+        link2 = PackageLink.create({"parent_id": box3.id, "child_id": box4.id})
+        self.assertEqual((link1 == link2), False)
+        with self.assertRaises(ValidationError):
+            link2.write({"parent_id": box1.id, "child_id": box2.id})
+
+
 
 class TestPackageInheritance(common.BaseHierarchy):
     """Tests for inheritance and recursion."""
@@ -594,7 +632,7 @@ class TestPackageHierarchyLinks(common.BaseHierarchy):
 
         # Update link so that package_f is now unlinked and ensure name is updated
         link.parent_id = False
-        self.assertEqual(link.name, "Unlink parent of F")
+        self.assertEqual(link.name, "Unlink Parent of F")
 
     def test_construct_package_hierarchy_links(self):
         """Make sure that unlinks for fulfilled non-top level packages are constructed correctly"""
@@ -865,9 +903,9 @@ class TestPackageHierarchyLinksValidation(common.BaseHierarchy):
             {"parent_id": self.pallet.id, "child_id": self.package2.id},
             {"parent_id": self.package3.id, "child_id": self.package2.id},
         ]
-
         with self.assertRaises(ValidationError):
-            PackageHierarchyLink.create(vals)
+            links = PackageHierarchyLink.create(vals)
+            links.constrain_links()
 
     def test_validate_links_switch_parent(self):
         """Make sure that an unlink and link for the same package is allowed."""
@@ -881,20 +919,21 @@ class TestPackageHierarchyLinksValidation(common.BaseHierarchy):
         links._validate_links()
 
     def test_repeated_links_not_allowed(self):
-        """Make sure that repeated links are not allowed"""
+        """Make sure that repeated links return the same id"""
         PackageHierarchyLink = self.env["package.hierarchy.link"]
 
         n_repeats = 2
         vals = [
             {"parent_id": self.pallet.id, "child_id": self.package2.id} for i in range(n_repeats)
         ]
-        with self.assertRaises(ValidationError):
-            PackageHierarchyLink.create(vals)
+        links = PackageHierarchyLink.create(vals)
+        self.assertEqual(len(links), 2)
+        # Odoo gives us the links as package.hierarchy.link(<id1>, <id1>)
+        self.assertEqual(links[0], links[1])
 
     def test_validate_links_maximum_length(self):
         """Make sure that links do not result in exceeding maximum depth."""
         PackageHierarchyLink = self.env["package.hierarchy.link"]
-
         self.package1.parent_id = False
         vals = [
             {"parent_id": self.pallet.id, "child_id": self.package1.id},
@@ -902,7 +941,8 @@ class TestPackageHierarchyLinksValidation(common.BaseHierarchy):
             {"parent_id": self.package2.id, "child_id": self.package3.id},
         ]
         with self.assertRaises(ValidationError):
-            PackageHierarchyLink.create(vals)
+            links = PackageHierarchyLink.create(vals)
+            links.constrain_links()
 
     def test_validate_links_maximum_length_existing_hierarchy(self):
         """Make sure that links do not result in exceeding maximum depth

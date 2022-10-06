@@ -20,7 +20,8 @@
             <field name="arch" type="xml">
                 <form string="Package hierarchy link">
                     <sheet>
-                        <div class="oe_title">
+                        <!-- Hide name when being created. Name is computed and user should not fill it in -->
+                        <div class="oe_title" attrs="{'invisible': [('id', '=', False)]}">
                             <label for="name" class="oe_edit_only"/>
                             <h1>
                                 <field name="name" readonly="1"/>
@@ -29,7 +30,9 @@
                         <group>
                             <field name="parent_id" />
                             <field name="child_id"/>
-                            <field name="move_line_ids" widget="many2many_tags"/>
+                            <!-- Hide move_line_ids when it is not set, as it is autopopulated when creating
+                            from move lines but not elsewhere. -->
+                            <field name="move_line_ids" widget="many2many_tags" attrs="{'invisible': [('move_line_ids', '=', [])]}"/>
                             <field name="company_id" invisible="1"/>
                         </group>
                     </sheet>
