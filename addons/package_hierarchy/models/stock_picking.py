@@ -52,6 +52,20 @@ class StockPicking(models.Model):
         Override to initially bypass multi location check for quant packages and call it manually
         once action_done is complete and all moves are in their new location.
         """
+        Package = self.env["stock.quant.package"]
         res = super(StockPicking, self.with_context(bypass_multi_location_check=True)).action_done()
-        self.mapped("move_line_ids").mapped("package_id")._check_not_multi_location()
+        query = """
+        SELECT * FROM (
+          SELECT DISTINCT UNNEST (ARRAY_AGG(DISTINCT package_id) || 
+            ARRAY_AGG(DISTINCT result_package_id) || ARRAY_AGG(DISTINCT u_result_parent_package_id))
+          FROM stock_move_line AS all_packages WHERE picking_id in %(picking_ids)s
+          ) AS all_unique_packages 
+          WHERE all_unique_packages IS NOT NULL
+          ORDER BY all_unique_packages;
+        """
+        self.env.cr.execute(query, {"picking_ids": tuple(self.ids)},)
+        tuple_unique_packages = self.env.cr.fetchall()
+        package_ids = [package[0] for package in tuple_unique_packages]
+        if package_ids:
+            Package.browse(package_ids)._check_not_multi_location()
         return res

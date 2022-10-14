@@ -39,31 +39,67 @@ class QuantPackage(models.Model):
 
     def _check_not_multi_location(self):
         if not self.env.context.get("bypass_multi_location_check", False):
-            for package in self:
-                locations = package.children_quant_ids.mapped('location_id')
-                if len(locations) > 1:
-                    raise ValidationError(_('Package cannot be in multiple '
-                                            'locations:\n%s\n%s') % (package.name,
-                                                                    ', '.join( [l.name for l in locations])))
+            packages = self.filtered(lambda p: p.package_id)
+            parent_packages = self - packages
+            multi_package_locations = False
+            multi_parent_package_locations = False
+            multi_loc_package_ids = []
+            if parent_packages:
+                parent_package_query = """
+                    SELECT pck.package_id
+                    FROM stock_quant sq
+                    JOIN stock_quant_package pck
+                    ON sq.package_id = pck.id
+                    WHERE pck.package_id in %(package_ids)s
+                    GROUP BY pck.package_id
+                    HAVING COUNT(Distinct sq.location_id) > 1;
+                """
+                self.env.cr.execute(
+                    parent_package_query, {"package_ids": tuple(parent_packages.ids)},
+                )
+                multi_parent_package_locations = self.env.cr.fetchall()
+            if packages:
+                package_query = """
+                    SELECT sq.package_id
+                    FROM stock_quant sq
+                    WHERE sq.package_id in %(package_ids)s
+                    GROUP BY sq.package_id
+                    HAVING COUNT(Distinct sq.location_id) > 1;
+                """
+                self.env.cr.execute(
+                    package_query, {"package_ids": tuple(packages.ids)},
+                )
+                multi_package_locations = self.env.cr.fetchall()
+            if multi_parent_package_locations:
+                multi_loc_package_ids.extend([result[0] for result in multi_parent_package_locations])
+            if multi_package_locations:
+                multi_loc_package_ids.extend([result[0] for result in multi_package_locations])
+            if multi_loc_package_ids:
+                multi_loc_packages = self.browse(multi_loc_package_ids)
+                raise ValidationError(
+                    _("The following packages cannot be set into multiple locations:\n%s") %
+                    (", ".join([p.name for p in multi_loc_packages]))
+                )
 
     @api.depends('package_id', 'children_ids')
     def _compute_parent_ids(self):
         for package in self.filtered(lambda p: not isinstance(p.id, models.NewId)):
-            package._check_not_multi_location()
             package.parent_ids = self.env['stock.quant.package'].search([('id', 'parent_of', package.id)]).ids
 
     @api.depends('package_id', 'children_ids', 'quant_ids.package_id')
     def _compute_children_quant_ids(self):
         for package in self.filtered(lambda p: not isinstance(p.id, models.NewId)):
-            package._check_not_multi_location()
             package.children_quant_ids = self.env['stock.quant'].search([('package_id', 'child_of', package.id)])
 
     @api.depends('quant_ids.package_id', 'quant_ids.location_id', 'quant_ids.company_id', 'quant_ids.owner_id')
     def _compute_package_info(self):
         for package in self:
-            values = {'location_id': False, 'company_id': self.env.user.company_id.id, 'owner_id': False}
-            package._check_not_multi_location()
-            values['location_id'] = package.children_quant_ids.mapped('location_id')
+            values = {
+                'location_id': False, 'company_id': self.env.user.company_id.id, 'owner_id': False
+            }
+            locations = package.with_context(prefetch_fields=False).children_quant_ids.mapped('location_id')
+            if len(locations) == 1:
+                values['location_id'] = locations
             package.location_id = values['location_id']
             package.company_id = values['company_id']
             package.owner_id = values['owner_id']
@@ -129,3 +165,21 @@ class QuantPackage(models.Model):
             else:
                 for ml in move_lines:
                     ml.qty_done = 0
+
+    def action_view_picking(self):
+        """
+        Override method to be able to see package transfers from a parent package too.
+        Default filter will be confirmed picks:
+          state in ('confirmed', 'waiting', 'assigned')
+        """
+        MoveLine = self.env["stock.move.line"]
+        action = self.env.ref("stock.action_picking_tree_all").read()[0]
+
+        packages = self.search([("id", "child_of", self.ids), ("package_id", "!=", False)])
+        domain = [
+            "|", ("result_package_id", "in", packages.ids), ("package_id", "in", packages.ids)
+        ]
+        pickings = MoveLine.search(domain).mapped("picking_id")
+        action["domain"] = [("id", "in", pickings.ids)]
+        action["context"] = {"search_default_confirmed": 1}
+        return action
