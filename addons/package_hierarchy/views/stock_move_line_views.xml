@@ -9,8 +9,13 @@
 
             <xpath expr="//field[@name='result_package_id']" position="after">
                 <field name="id" invisible="1" />
-                <field name="x_result_package_link_ids" widget="many2many_tags" groups="stock.group_tracking_lot" options="{'no_quick_create':True, 'no_create_edit': True}" optional="hide" domain="[('has_move_line', '=', True)]"/>
-                <button name="button_new_package_link" icon="fa-plus" type="object" groups="stock.group_tracking_lot" />
+                <field name="x_result_package_link_ids" widget="many2many_tags"
+                    groups="stock.group_tracking_lot"
+                    options="{'no_quick_create':True, 'no_create_edit': True}" optional="hide"
+                    domain="[('has_move_line', '=', True)]" />
+                <button name="button_new_package_link" icon="fa-plus" type="object"
+                    groups="stock.group_tracking_lot"
+                    attrs="{'invisible': [('state', 'in', ['done', 'cancel'])]}" />
             </xpath>
         </field>
     </record>
