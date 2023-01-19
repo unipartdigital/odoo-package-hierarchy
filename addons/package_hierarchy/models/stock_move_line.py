@@ -45,6 +45,10 @@ class StockMoveLine(models.Model):
         PackageHierarchyLink.create_unlinks(top_fulfilled_packages, self)
 
     def button_new_package_link(self):
+        if self.state in ["done", "cancel"]:
+            raise ValidationError(
+                _("Can not create a new package link on a done or cancelled line")
+            )
         action = (
             self.env.ref("package_hierarchy.action_package_hierarchy_link_form").sudo().read()[0]
         )
