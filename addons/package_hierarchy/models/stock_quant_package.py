@@ -175,11 +175,18 @@ class QuantPackage(models.Model):
         MoveLine = self.env["stock.move.line"]
         action = self.env.ref("stock.action_picking_tree_all").read()[0]
 
-        packages = self.search([("id", "child_of", self.ids), ("package_id", "!=", False)])
-        domain = [
-            "|", ("result_package_id", "in", packages.ids), ("package_id", "in", packages.ids)
-        ]
+        domain = self._get_move_lines_of_children_domain()
         pickings = MoveLine.search(domain).mapped("picking_id")
         action["domain"] = [("id", "in", pickings.ids)]
         action["context"] = {"search_default_confirmed": 1}
         return action
+
+    def _get_move_lines_of_children_domain(self):
+        """
+        Return domain of move lines, method can be extended if needed
+        """
+        return [
+            "|",
+            ("result_package_id", "child_of", self.ids),
+            ("package_id", "child_of", self.ids),
+        ]
