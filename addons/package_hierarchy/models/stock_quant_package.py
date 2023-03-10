@@ -175,7 +175,7 @@ class QuantPackage(models.Model):
         MoveLine = self.env["stock.move.line"]
         action = self.env.ref("stock.action_picking_tree_all").read()[0]
 
-        packages = self.search([("id", "child_of", self.ids), ("package_id", "!=", False)])
+        packages = self.search([("id", "child_of", self.ids)])
         domain = [
             "|", ("result_package_id", "in", packages.ids), ("package_id", "in", packages.ids)
         ]
