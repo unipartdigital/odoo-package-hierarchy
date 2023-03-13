@@ -263,6 +263,49 @@ class TestPackageHierarchy(common.BaseHierarchy):
         picking.action_done()
         self.assertEqual(picking.state, 'done', 'Picking should be in done state')
 
+    def test_package_transfer_packages(self):
+        """
+        Assert that the move line domain which finds the pickings to show when clicking
+        Package Transfers button from packages form view is as expected when package is inside a
+        pallet and when package is not inside a pallet.
+        """
+        Package = self.env['stock.quant.package']
+
+        pallet = Package.create({})
+        package = Package.create({})
+        picking = self.create_picking(self.picking_type_internal)
+        # Create a quant and move for apple and banana products
+        product_qty = 1
+        for product in [self.apple, self.banana]:
+            self.create_quant(
+                product.id, self.test_location_01.id, product_qty, package_id=package.id
+            )
+            self.create_move(product, product_qty, picking)
+        # Confirm and assign the picking
+        picking.action_confirm()
+        picking.action_assign()
+        without_pallet_action = package.action_view_picking()
+        self.assertFalse(
+            package.package_id,
+            f"Package {package.name} should not have parent package"
+        )
+        move_line_expected_domain = [("id", "in", picking.ids)]
+        msg = f"Expected domain is {move_line_expected_domain}"
+        self.assertEqual(without_pallet_action["domain"], move_line_expected_domain, msg)
+        # Complete picking's move lines and put the package into a pallet
+        for move_line in picking.move_line_ids:
+            move_line.qty_done = product_qty
+            move_line.u_result_parent_package_id = pallet.id
+
+        # Mark picking as done and ensure the domain will remain
+        # the same when package has parent package
+        picking.action_done()
+        self.assertTrue(
+            package.package_id,
+            f"Package {package.name} should have parent package"
+        )
+        with_pallet_action = package.action_view_picking()
+        self.assertEqual(with_pallet_action["domain"], move_line_expected_domain, msg)
 
 
 class TestPackageInheritance(common.BaseHierarchy):
