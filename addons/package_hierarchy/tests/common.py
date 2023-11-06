@@ -1,4 +1,7 @@
 from odoo.tests import common, tagged
+from odoo.fields import Datetime
+from datetime import timedelta
+from itertools import count
 
 @tagged('-at_install', 'post_install')
 class BaseHierarchy(common.SavepointCase):
@@ -31,6 +34,9 @@ class BaseHierarchy(common.SavepointCase):
 
         # Picking types
         cls.picking_type_internal = cls.env.ref("stock.picking_type_internal")
+
+        # Counter to ensure stock.quant are created in order
+        cls.quant_counter = count()
 
     @classmethod
     def create_move_line(cls, move, qty, **kwargs):
@@ -99,4 +105,6 @@ class BaseHierarchy(common.SavepointCase):
             "quantity": qty,
         }
         vals.update(kwargs)
+        #Ensure quants are reserved in order of creation
+        vals.setdefault("in_date", Datetime.now() + timedelta(0, next(cls.quant_counter)))
         return Quant.create(vals)
