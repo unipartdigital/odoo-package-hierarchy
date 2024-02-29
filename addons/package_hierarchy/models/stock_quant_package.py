@@ -211,7 +211,7 @@ class QuantPackage(models.Model):
         """Overide to include picks of child packages"""
         MoveLines = self.env["stock.move.line"]
 
-        action = self.env.ref("stock.action_picking_tree_all").read()[0]
+        action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
         domain = self._get_move_lines_of_children_domain()
         pickings = MoveLines.search(domain, order="id").picking_id
         action["domain"] = [("id", "in", pickings.ids)]
