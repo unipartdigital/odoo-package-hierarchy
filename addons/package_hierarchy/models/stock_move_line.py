@@ -49,8 +49,8 @@ class StockMoveLine(models.Model):
             raise ValidationError(
                 _("Can not create a new package link on a done or cancelled line")
             )
-        action = (
-            self.env.ref("package_hierarchy.action_package_hierarchy_link_form").sudo().read()[0]
+        action = self.env["ir.actions.actions"]._for_xml_id(
+            "package_hierarchy.action_package_hierarchy_link_form"
         )
         action["target"] = "new"
         action["view_mode"] = "form"
