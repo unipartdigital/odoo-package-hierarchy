@@ -27,7 +27,7 @@ class StockMoveLine(models.Model):
         for dest_location, move_lines in self.exists().groupby("location_dest_id"):
             move_lines.x_result_package_link_ids.construct()
 
-        self.result_package_id.quant_ids._constrain_package()
+        self.exists().result_package_id.quant_ids._constrain_package()
 
     def construct_package_hierarchy_links(self):
         """Construct links when entire packages are being moved.
