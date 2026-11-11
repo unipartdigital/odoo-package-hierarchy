@@ -1,7 +1,5 @@
 # package_hierarchy
 
-[![Build Status](https://travis-ci.org/unipartdigital/odoo-package-hierarchy.svg?branch=13.0)](https://travis-ci.org/unipartdigital/odoo-package-hierarchy)
-
 Extend stock.quant.package model to work with parent packages, which in some cases is needed when working with packages inside pallets.
 
 ## Features of this module
