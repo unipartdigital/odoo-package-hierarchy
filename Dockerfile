@@ -8,14 +8,9 @@ RUN unzip -q -d /opt /opt/udes-open.zip ; \
     ln -s /opt/udes-open-${ODOO_VERSION}/addons/udes_common \
           /opt/odoo/addons/
 
-# psycopg2-binary dependencies
-RUN apt update && apt install -y python3-dev libpq-dev
-
 # Install pip packages
 USER odoo
-RUN pip3 install --user \
-    coverage==4.5.1 \
-    psycopg2-binary==2.8.5
+RUN pip3 install --user coverage==4.5.1
 
 # Prerequisite module installation (without tests)
 USER root
